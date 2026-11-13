@@ -1,74 +1,66 @@
-const API_URL = "https://jsonplaceholder.typicode.com/users";
-
-const loadButton = document.getElementById("load-users");
-const filterInput = document.getElementById("filter-input");
-const statusEl = document.getElementById("status");
-const usersList = document.getElementById("users-list");
-
-let allUsers = []; // stored here so filtering needs no new request
-
+const USERS_URL = "https://jsonplaceholder.typicode.com/users";
+ 
+const loadBtn = document.querySelector("#load-users");
+const filterInput = document.querySelector("#filter-input");
+const statusText = document.querySelector("#status");
+const list = document.querySelector("#users-list");
+ 
+let users = []; // filled once by loadUsers()
+ 
+function renderUsers(usersToShow) {
+  list.innerHTML = "";
+ 
+  if (usersToShow.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = users.length
+      ? "No users match your filter."
+      : "No users loaded yet.";
+    list.appendChild(li);
+    return;
+  }
+ 
+  usersToShow.forEach((user) => {
+    const li = document.createElement("li");
+ 
+    const name = document.createElement("strong");
+    name.textContent = user.name;
+ 
+    const details = document.createElement("p");
+    details.textContent =
+      `${user.email} · ${user.address.city} · ${user.company.name}`;
+ 
+    li.append(name, details);
+    list.appendChild(li);
+  });
+}
+ 
 async function loadUsers() {
-    statusEl.textContent = "Loading users...";
-    loadButton.disabled = true;
-
-    try {
-        const response = await fetch(API_URL);
-
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        allUsers = await response.json();
-        renderUsers(allUsers);
-        statusEl.textContent = `Loaded ${allUsers.length} users.`;
-    } catch (error) {
-        statusEl.textContent = `Error: ${error.message}`;
-    } finally {
-        loadButton.disabled = false;
+  statusText.textContent = "Loading users...";
+  loadBtn.disabled = true;
+ 
+  try {
+    const response = await fetch(USERS_URL);
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
     }
+    users = await response.json();
+    renderUsers(users);
+    statusText.textContent = `Loaded ${users.length} users.`;
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = "Could not load users. Please try again.";
+  } finally {
+    loadBtn.disabled = false;
+  }
 }
-
-function renderUsers(list) {
-    usersList.innerHTML = "";
-
-    for (const user of list) {
-        const item = document.createElement("li");
-
-        const name = document.createElement("strong");
-        name.textContent = user.name;
-
-        const email = document.createElement("p");
-        email.textContent = `Email: ${user.email}`;
-
-        const city = document.createElement("p");
-        city.textContent = `City: ${user.address.city}`;
-
-        const company = document.createElement("p");
-        company.textContent = `Company: ${user.company.name}`;
-
-        item.append(name, email, city, company);
-        usersList.appendChild(item);
-    }
+ 
+function applyFilter() {
+  const text = filterInput.value.trim().toLowerCase();
+  const matches = users.filter((user) =>
+    user.name.toLowerCase().includes(text)
+  );
+  renderUsers(matches);
 }
-
-function filterUsers() {
-    if (allUsers.length === 0) {
-        return; // nothing loaded yet
-    }
-
-    const search = filterInput.value.trim().toLowerCase();
-    const matches = allUsers.filter((user) =>
-        user.name.toLowerCase().includes(search)
-    );
-
-    renderUsers(matches);
-
-    if (matches.length === 0) {
-        statusEl.textContent = "No users match your filter.";
-    } else {
-        statusEl.textContent = `Showing ${matches.length} of ${allUsers.length} users.`;
-    }
-}
-
-loadButton.addEventListener("click", loadUsers);
-filterInput.addEventListener("input", filterUsers);
+ 
+loadBtn.addEventListener("click", loadUsers);
+filterInput.addEventListener("input", applyFilter);
